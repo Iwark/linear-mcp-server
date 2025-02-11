@@ -1,0 +1,16 @@
+{
+  "name": "linear-mcp-server",
+  "version": "1.0.0",
+  "description": "Linear MCP Server",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@linear/sdk": "^38.0.0",
+    "@modelcontextprotocol/sdk": "^1.4.1",
+    "dotenv": "^16.4.5",
+    "zod": "^3.22.4"
+  }
+} 
