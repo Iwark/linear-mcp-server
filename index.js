@@ -231,76 +231,73 @@ server.tool(
   "read-resource",
   "Read a Linear resource",
   {
-    uri: z.string().describe("Resource URI to read")
+    uri: z.string().describe("Resource URI to read e.g. linear://issues/4cb972e7-9ba1-4c52-8465-cdf2679ccea7")
   },
   async ({ uri }) => {
     try {
       let data;
-      const url = new URL(uri);
-
-      switch (url.protocol) {
-        case "linear:": {
-          const path = url.pathname.slice(1);
-          const [resourceType, id] = path.split('/');
-
-          switch (resourceType) {
-            case "organization": {
-              const org = await linearClient.organization;
-              data = {
-                id: org.id,
-                name: org.name,
-                urlKey: org.urlKey,
-                createdAt: org.createdAt
-              };
-              break;
+      const matches = uri.match(/^linear:\/\/([^/]+)\/(.+)$/);
+      if (!matches) {
+        throw new Error(`Invalid Linear URI format: ${uri}`);
+      }
+      
+      const [, resourceType, id] = matches;
+      switch (resourceType) {
+        case "issues": {
+          if (id) {
+            const issue = await linearClient.issue(id);
+            if (!issue) {
+              throw new Error(`Issue not found: ${id}`);
             }
-            case "issues": {
-              if (id) {
-                const issue = await linearClient.issue(id);
-                data = mapIssue(issue);
-              } else {
-                const { nodes } = await linearClient.issues({
-                  first: 100,
-                  orderBy: "updatedAt",
-                  includeArchived: false
-                });
-                data = nodes.map(mapIssue);
-              }
-              break;
-            }
-            case "teams": {
-              if (id) {
-                const team = await linearClient.team(id);
-                const states = await team.states().then(states => 
-                  states.nodes.map(state => ({
-                    id: state.id,
-                    name: state.name,
-                    type: state.type
-                  }))
-                );
-                data = mapTeam(team, states);
-              } else {
-                const { nodes } = await linearClient.teams();
-                data = await Promise.all(nodes.map(async team => {
-                  const states = await team.states().then(states => 
-                    states.nodes.map(state => ({
-                      id: state.id,
-                      name: state.name,
-                      type: state.type
-                    }))
-                  );
-                  return mapTeam(team, states);
-                }));
-              }
-              break;
-            }
-            default:
-              throw new Error(`Unknown resource type: ${resourceType}`);
+            data = mapIssue(issue);
+          } else {
+            const { nodes } = await linearClient.issues({
+              first: 100,
+              orderBy: "updatedAt",
+              includeArchived: false
+            });
+            data = nodes.map(mapIssue);
+          }
+          break;
+        }
+        case "organization": {
+          const org = await linearClient.organization;
+          data = {
+            id: org.id,
+            name: org.name,
+            urlKey: org.urlKey,
+            createdAt: org.createdAt
+          };
+          break;
+        }
+        case "teams": {
+          if (id) {
+            const team = await linearClient.team(id);
+            const states = await team.states().then(states => 
+              states.nodes.map(state => ({
+                id: state.id,
+                name: state.name,
+                type: state.type
+              }))
+            );
+            data = mapTeam(team, states);
+          } else {
+            const { nodes } = await linearClient.teams();
+            data = await Promise.all(nodes.map(async team => {
+              const states = await team.states().then(states => 
+                states.nodes.map(state => ({
+                  id: state.id,
+                  name: state.name,
+                  type: state.type
+                }))
+              );
+              return mapTeam(team, states);
+            }));
           }
           break;
         }
         default:
-          throw new Error(`Unknown protocol: ${url.protocol}`);
+          throw new Error(`Unknown resource type: ${resourceType}`);
       }
 
       return createResponse({ data });
