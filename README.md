@@ -2,6 +2,8 @@
 
 A Linear Model Context Protocol (MCP) server implementation that provides an MCP interface for accessing Linear resources.
 
+<a href="https://glama.ai/mcp/servers/zh2tj9gvsa"><img width="380" height="200" src="https://glama.ai/mcp/servers/zh2tj9gvsa/badge" alt="Linear Server MCP server" /></a>
+
 ## Setup with Cursor
 
 1. Clone the repository and install dependencies:
