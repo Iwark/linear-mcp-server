@@ -1,8 +1,18 @@
 # Linear MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@Iwark/linear-mcp-server)](https://smithery.ai/server/@Iwark/linear-mcp-server)
+
 A Linear Model Context Protocol (MCP) server implementation that provides an MCP interface for accessing Linear resources.
 
 ## Setup with Cursor
+
+### Installing via Smithery
+
+To install Linear MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@Iwark/linear-mcp-server):
+
+```bash
+npx -y @smithery/cli install @Iwark/linear-mcp-server --client claude
+```
 
 1. Clone the repository and install dependencies:
 
