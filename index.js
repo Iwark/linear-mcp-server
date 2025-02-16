@@ -110,6 +110,9 @@ const server = new McpServer({
       },
       "read-resource": {
         description: "Read a Linear resource"
+      },
+      "update-issue-status": {
+        description: "Update the status of a Linear issue"
       }
     }
   }
@@ -303,6 +306,69 @@ server.tool(
       return createResponse({ data });
     } catch (error) {
       console.error("Error in read-resource:", error);
+      return createResponse({ error: handleLinearError(error) });
+    }
+  }
+);
+
+// Tool to update issue status
+server.tool(
+  "update-issue-status",
+  "Update the status of a Linear issue",
+  {
+    issueId: z.string().describe("ID of the issue to update"),
+    state: z.union([
+      z.string().describe("Name of the state (e.g. 'In Progress', 'Done')"),
+    ]).describe("Either state name or state object with ID")
+  },
+  async ({ issueId, state }) => {
+    try {
+      await rateLimiter.checkLimit();
+
+      const issue = await linearClient.issue(issueId);
+      if (!issue) {
+        throw new Error(`Issue not found: ${issueId}`);
+      }
+
+      let stateId;
+      if (typeof state === 'string') {
+        // If state is a name, we need to find its ID from the team's states
+        const team = await linearClient.team((await issue.team)?.id);
+        if (!team) {
+          throw new Error(`Team not found for issue: ${issueId}`);
+        }
+
+        const states = await team.states();
+        const matchingState = states.nodes.find(s => 
+          s.name.toLowerCase() === state.toLowerCase()
+        );
+
+        if (!matchingState) {
+          const availableStates = states.nodes.map(s => s.name).join(', ');
+          throw new Error(`State "${state}" not found. Available states: ${availableStates}`);
+        }
+
+        stateId = matchingState.id;
+      } else {
+        // If state is an object with ID, use it directly
+        stateId = state.id;
+      }
+
+      const updatedIssue = await issue.update({
+        stateId: stateId
+      });
+
+      if (!updatedIssue) {
+        throw new Error("Failed to update issue status");
+      }
+
+      return createResponse({
+        success: true,
+        message: "Issue status updated successfully",
+        issue: mapIssue(updatedIssue)
+      });
+    } catch (error) {
+      console.error("Error in update-issue-status:", error);
       return createResponse({ error: handleLinearError(error) });
     }
   }
